@@ -1,1 +1,15 @@
-T
+Pushing a new file to an existing git repository ?
+https://stackoverflow.com/questions/51554566/pushing-a-new-file-to-an-existing-git-repository 
+
+Question - 
+I have a remote Git repository, which is a folder containing a bunch of files.
+I have just created a new file on my computer, without pulling the existing Git repository or anything. Can I push this new file such that it ends up in the folder I have in the remote repository?
+Or do I have to pull first, add my file, and then push again.
+(The file does not need to work with any of the other files in the folder)  
+
+Answer : 
+Explanation: To communicate with the remote git repo you need to link it with a folder in your local machine (git init). 
+After this, add the remote repo link (git remote add origin <URL>) and pull it (git pull origin main). 
+Now, once your local folder is synchronized with the remote repo you're free to add any new files (git add <file>, 
+git commit -m <message> and git push origin main). 
+This would be the simplest way to do it. Remember, git stores all the information in your that local folder (in .git/ folder) which you just linked with the remote repo and its responsibility is to maintain all git metadata (credentials, git history...). Without this process in place, it would be difficult for git to track historical information about the project. I hope you understand the reason behind this.
