@@ -1,0 +1,74 @@
+CLASS zcl_api_bp DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_oo_adt_classrun .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS zcl_api_bp IMPLEMENTATION.
+
+
+  METHOD if_oo_adt_classrun~main.
+    TRY.
+        "create http destination by url; API endpoint for API sandbox
+        DATA(lo_http_destination) =
+cl_http_destination_provider=>create_by_url( 'https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder?$inlinecount=allpages&$top=50' ).
+        "alternatively create HTTP destination via destination service
+        "cl_http_destination_provider=>create_by_cloud_destination( i_name = '<...>'
+        "                            i_service_instance_name = '<...>' )
+        "SAP Help: https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/f871712b816943b0ab5e04b60799e518.html
+        "create HTTP client by destination
+        DATA(lo_web_http_client) = cl_web_http_client_manager=>create_by_http_destination( lo_http_destination ) .
+        "adding headers with API Key for API Sandbox
+        DATA(lo_web_http_request) = lo_web_http_client->get_http_request( ).
+        lo_web_http_request->set_header_fields( VALUE #(
+                    (  name = 'APIKey' value = 'IAj7W188ovUrB6y1s1nJRKwOFqWEUj9W' )
+                    (  name = 'DataServiceVersion' value = '2.0' )
+                    (  name = 'Accept' value = 'application/json' )
+                ) ).
+        "set request method and execute request
+        DATA(lo_web_http_response) = lo_web_http_client->execute( if_web_http_client=>get ).
+        DATA(lv_response) = lo_web_http_response->get_text( ).
+      CATCH cx_http_dest_provider_error cx_web_http_client_error cx_web_message_error.
+        "error handling
+    ENDTRY.
+    out->write( |response:  { lv_response }| ).
+    DATA: lo_data       TYPE REF TO data,
+          lo_header     TYPE REF TO data,
+          lv_so_type(2) TYPE c.
+    FIELD-SYMBOLS: <lfs_data>   TYPE any,
+                   <lfs_header> TYPE any.
+    CALL METHOD /ui2/cl_json=>deserialize
+      EXPORTING
+        json         = lv_response
+        pretty_name  = /ui2/cl_json=>pretty_mode-user
+        assoc_arrays = abap_true
+      CHANGING
+        data         = lo_data.
+    ASSIGN lo_data->* TO <lfs_data>.
+    ASSIGN COMPONENT 'D' OF STRUCTURE <lfs_data> TO <lfs_header>.
+    IF <lfs_header> IS ASSIGNED.
+      lo_header = <lfs_header>.
+      "To read dereferenced data
+      ASSIGN lo_header->* TO FIELD-SYMBOL(<lfs_header_structure>).
+      IF <lfs_header_structure> IS ASSIGNED.
+        ASSIGN COMPONENT 'SALESORDERTYPE' OF STRUCTURE <lfs_header_structure> TO FIELD-SYMBOL(<lfs_any>).
+        IF <lfs_any> IS ASSIGNED.
+          lv_so_type = <lfs_any>->*.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+    out->write( lv_so_type ).
+
+
+
+
+  ENDMETHOD.
+ENDCLASS.
